@@ -44,7 +44,7 @@ type RequiredKeys<T, MakeDefaultRequired> = {
   [K in keyof T]: T[K] extends
     | { required: true }
     | (MakeDefaultRequired extends true ? { default: any } : never)
-    ? K
+    ? K 
     : never
 }[keyof T]
 
@@ -178,6 +178,8 @@ export function resolveProps(
     }
     // validation
     if (__DEV__ && rawProps) {
+      // options = { propA: { type: Boolean }, 0:true, 1:true}
+      // rawProps = {'prop-a': false }
       for (const key in options) {
         let opt = options[key]
         if (opt == null) continue
@@ -192,6 +194,7 @@ export function resolveProps(
     }
   } else {
     // if component has no declared props, $attrs === $props
+    // TODO: test
     attrs = props
   }
 
@@ -264,6 +267,7 @@ function normalizePropsOptions(
         const prop: NormalizedProp = (options[normalizedKey] =
           isArray(opt) || isFunction(opt) ? { type: opt } : opt)
         if (prop != null) {
+          // type [Number, Boolean, String]
           const booleanIndex = getTypeIndex(Boolean, prop.type)
           const stringIndex = getTypeIndex(String, prop.type)
           prop[BooleanFlags.shouldCast] = booleanIndex > -1
@@ -297,12 +301,14 @@ function getTypeIndex(
   type: Prop<any>,
   expectedTypes: PropType<any> | void | null | true
 ): number {
+  // [String, Number, Boolean]
   if (isArray(expectedTypes)) {
     for (let i = 0, len = expectedTypes.length; i < len; i++) {
       if (isSameType(expectedTypes[i], type)) {
         return i
       }
     }
+    // () => false
   } else if (isFunction(expectedTypes)) {
     return isSameType(expectedTypes, type) ? 0 : -1
   }

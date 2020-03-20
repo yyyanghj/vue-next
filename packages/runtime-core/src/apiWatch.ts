@@ -50,8 +50,8 @@ type MapSources<T> = {
 
 type MapOldSources<T, Immediate> = {
   [K in keyof T]: T[K] extends WatchSource<infer V>
-    ? Immediate extends true ? (V | undefined) : V
-    : never
+  ? Immediate extends true ? (V | undefined) : V
+  : never
 }
 
 type InvalidateCbRegistrator = (cb: () => void) => void
@@ -111,8 +111,8 @@ export function watch<T = any>(
   if (__DEV__ && !isFunction(cb)) {
     warn(
       `\`watch(fn, options?)\` signature has been moved to a separate API. ` +
-        `Use \`watchEffect(fn, options?)\` instead. \`watch\` now only ` +
-        `supports \`watch(source, cb, options?) signature.`
+      `Use \`watchEffect(fn, options?)\` instead. \`watch\` now only ` +
+      `supports \`watch(source, cb, options?) signature.`
     )
   }
   return doWatch(source, cb, options)
@@ -127,13 +127,13 @@ function doWatch(
     if (immediate !== undefined) {
       warn(
         `watch() "immediate" option is only respected when using the ` +
-          `watch(source, callback, options?) signature.`
+        `watch(source, callback, options?) signature.`
       )
     }
     if (deep !== undefined) {
       warn(
         `watch() "deep" option is only respected when using the ` +
-          `watch(source, callback, options?) signature.`
+        `watch(source, callback, options?) signature.`
       )
     }
   }
@@ -143,6 +143,7 @@ function doWatch(
 
   let getter: () => any
   if (isArray(source)) {
+    // watch([a, () => b.value ] , () => {})
     getter = () =>
       source.map(
         s =>
@@ -151,12 +152,15 @@ function doWatch(
             : callWithErrorHandling(s, instance, ErrorCodes.WATCH_GETTER)
       )
   } else if (isRef(source)) {
+    // watch(a , () => {})
     getter = () => source.value
   } else if (cb) {
+    // watch(() => a.value , () => {})
     // getter with cb
     getter = () =>
       callWithErrorHandling(source, instance, ErrorCodes.WATCH_GETTER)
   } else {
+    // watch(() => {})
     // no cb -> simple effect
     getter = () => {
       if (instance && instance.isUnmounted) {
@@ -174,6 +178,7 @@ function doWatch(
     }
   }
 
+  // deep
   if (cb && deep) {
     const baseGetter = getter
     getter = () => traverse(baseGetter())
@@ -204,24 +209,24 @@ function doWatch(
   let oldValue = isArray(source) ? [] : INITIAL_WATCHER_VALUE
   const applyCb = cb
     ? () => {
-        if (instance && instance.isUnmounted) {
-          return
-        }
-        const newValue = runner()
-        if (deep || hasChanged(newValue, oldValue)) {
-          // cleanup before running cb again
-          if (cleanup) {
-            cleanup()
-          }
-          callWithAsyncErrorHandling(cb, instance, ErrorCodes.WATCH_CALLBACK, [
-            newValue,
-            // pass undefined as the old value when it's changed for the first time
-            oldValue === INITIAL_WATCHER_VALUE ? undefined : oldValue,
-            onInvalidate
-          ])
-          oldValue = newValue
-        }
+      if (instance && instance.isUnmounted) {
+        return
       }
+      const newValue = runner()
+      if (deep || hasChanged(newValue, oldValue)) {
+        // cleanup before running cb again
+        if (cleanup) {
+          cleanup()
+        }
+        callWithAsyncErrorHandling(cb, instance, ErrorCodes.WATCH_CALLBACK, [
+          newValue,
+          // pass undefined as the old value when it's changed for the first time
+          oldValue === INITIAL_WATCHER_VALUE ? undefined : oldValue,
+          onInvalidate
+        ])
+        oldValue = newValue
+      }
+    }
     : void 0
 
   let scheduler: (job: () => any) => void
