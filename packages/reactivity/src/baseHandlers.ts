@@ -42,12 +42,14 @@ const arrayInstrumentations: Record<string, Function> = {}
 
 function createGetter(isReadonly = false, shallow = false) {
   return function get(target: object, key: string | symbol, receiver: object) {
+    // NOTE: 读取 reactive 设置的 flag
     if (key === ReactiveFlags.IS_REACTIVE) {
       return !isReadonly
     } else if (key === ReactiveFlags.IS_READONLY) {
       return isReadonly
     } else if (
       key === ReactiveFlags.RAW &&
+      // NOTE: reactive 会将 proxy 返回的代理对象存在原始对象上
       receiver ===
         (isReadonly
           ? (target as any)[ReactiveFlags.READONLY]
@@ -57,10 +59,12 @@ function createGetter(isReadonly = false, shallow = false) {
     }
 
     const targetIsArray = isArray(target)
+    // NOTE: 当调用 arr.includes 等查找方法时, 需要 track 数组的每一个元素
+    // NOTE: 这里会返回了对 inludes 的包装函数
     if (targetIsArray && hasOwn(arrayInstrumentations, key)) {
       return Reflect.get(arrayInstrumentations, key, receiver)
     }
-
+    // NOTE: 读到返回值
     const res = Reflect.get(target, key, receiver)
 
     if (
@@ -71,19 +75,23 @@ function createGetter(isReadonly = false, shallow = false) {
       return res
     }
 
+    // NOTE: 如果是 readonly 就不需要 track 了, 因为无法 set, 自然不需要收集依赖触发更新
     if (!isReadonly) {
       track(target, TrackOpTypes.GET, key)
     }
 
+    // NOTE: shallow 只监听一层
     if (shallow) {
       return res
     }
 
+    // NOTE: ref 解包, 如果 target 是数组的话是不会解包的, 直接返回
     if (isRef(res)) {
       // ref unwrapping, only for Objects, not for Arrays.
       return targetIsArray ? res : res.value
     }
 
+    // NOTE: 返回值是一个对象时, 懒代理这个对象
     if (isObject(res)) {
       // Convert returned value into a proxy as well. we do the isObject check
       // here to avoid invalid value warning. Also need to lazy access readonly
@@ -108,6 +116,7 @@ function createSetter(shallow = false) {
     const oldValue = (target as any)[key]
     if (!shallow) {
       value = toRaw(value)
+      // NOTE: 旧值如果是一个 ref 对象, 且新值不是 ref, 那么更新旧值的 ref.value 就好了
       if (!isArray(target) && isRef(oldValue) && !isRef(value)) {
         oldValue.value = value
         return true
@@ -120,6 +129,7 @@ function createSetter(shallow = false) {
     const result = Reflect.set(target, key, value, receiver)
     // don't trigger if target is something up in the prototype chain of original
     if (target === toRaw(receiver)) {
+      // NOTE: trigger 触发更新
       if (!hadKey) {
         trigger(target, TriggerOpTypes.ADD, key, value)
       } else if (hasChanged(value, oldValue)) {
