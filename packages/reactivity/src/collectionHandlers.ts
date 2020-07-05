@@ -27,6 +27,15 @@ const toShallow = <T extends unknown>(value: T): T => value
 const getProto = <T extends CollectionTypes>(v: T): any =>
   Reflect.getPrototypeOf(v)
 
+/**
+ * @example
+ * const raw = {}
+ * const a = reactive(raw)
+ * const map = reactive(new Map())
+ * map.set(a, true)
+ * map.get(a)
+ * map.set(raw, false)
+ */
 function get(
   target: MapTypes,
   key: unknown,
@@ -34,6 +43,7 @@ function get(
 ) {
   target = toRaw(target)
   const rawKey = toRaw(key)
+  // NOTE: 当 key 是一个响应式对象时, 追踪
   if (key !== rawKey) {
     track(target, TrackOpTypes.GET, key)
   }
@@ -82,6 +92,7 @@ function set(this: MapTypes, key: unknown, value: unknown) {
 
   let hadKey = has.call(target, key)
   if (!hadKey) {
+    // NOTE: 这个分支假设 key 是响应式对象, 转换成原始对象再调用 has 一次
     key = toRaw(key)
     hadKey = has.call(target, key)
   } else if (__DEV__) {
