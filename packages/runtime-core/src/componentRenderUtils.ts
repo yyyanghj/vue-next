@@ -92,6 +92,7 @@ export function renderComponentRoot(
             )
           : render(props, null as any /* we know it doesn't need it */)
       )
+      // NOTE: functional 组件如果没有声明 props, 只透传 class, styles, onXXX 等
       fallthroughAttrs = Component.props ? attrs : getFallthroughAttrs(attrs)
     }
 
@@ -113,6 +114,7 @@ export function renderComponentRoot(
         root.shapeFlag & ShapeFlags.ELEMENT ||
         root.shapeFlag & ShapeFlags.COMPONENT
       ) {
+        // NOTE: 透传 attrs
         root = cloneVNode(root, fallthroughAttrs)
       } else if (__DEV__ && !accessedAttrs && root.type !== Comment) {
         const allAttrs = Object.keys(attrs)
@@ -209,6 +211,7 @@ const getChildRoot = (
   if (children.length !== 1) {
     return [vnode, undefined]
   }
+  // NOTE: 当 children 只有一个时, 即[child], 声明 setRoot, 为了 hot-reload?
   const childRoot = children[0]
   const index = rawChildren.indexOf(childRoot)
   const dynamicIndex = dynamicChildren

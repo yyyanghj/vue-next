@@ -1033,6 +1033,7 @@ function baseCreateRenderer(
     }
 
     if (n1 == null) {
+      // 利用 anchor 锚点, insertBefore
       hostInsert(fragmentStartAnchor, container, anchor)
       hostInsert(fragmentEndAnchor, container, anchor)
       // a fragment can only have array children
