@@ -117,9 +117,11 @@ export const initSlots = (
       // make compiler marker non-enumerable
       def(children as InternalSlots, '_', type)
     } else {
+      // 手写 render
       normalizeObjectSlots(children as RawSlots, (instance.slots = {}))
     }
   } else {
+    // jsx
     instance.slots = {}
     if (children) {
       normalizeVNodeSlots(instance, children)
